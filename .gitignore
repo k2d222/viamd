@@ -33,6 +33,7 @@ CMakeSettings.json
 
 # Misc
 .DS_Store
+compile_commands.json
 
 # Folders
 build*/
@@ -40,6 +41,7 @@ xcode/
 .vscode/
 .vs/
 gen/
+.cache/
 ext/imgui/backends/
 ext/imgui/docs/
 ext/imgui/examples/

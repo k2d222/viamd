@@ -14,6 +14,6 @@ struct Api {
 
 namespace api {
     Api create(int port = 8080);
-    void initialize(Api& api, ApplicationState& state);
-    void update(Api& api, ApplicationState& state);
+    void initialize(Api& api, ApplicationState* data);
+    void update(Api& api, ApplicationState* data);
 }

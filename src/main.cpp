@@ -553,7 +553,7 @@ int main(int argc, char** argv) {
 #ifdef VIAMD_ENABLE_WEBSOCKET
     VIAMD_LOG_DEBUG("Initializing WebSocket server...");
     Api api = api::create();
-    api::initialize(api, state);
+    api::initialize(api, &state);
     VIAMD_LOG_INFO("WebSocket server is listening on port %d.", api.server.port());
 #endif
 
@@ -654,7 +654,7 @@ int main(int argc, char** argv) {
         application::update(&state.app);
 
 #ifdef VIAMD_ENABLE_WEBSOCKET
-        api::update(api, state);
+        api::update(api, &state);
 #endif
         
         // This needs to happen first (in imgui events) to enable docking of imgui windows

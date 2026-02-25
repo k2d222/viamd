@@ -1,5 +1,4 @@
 ﻿#include <core/md_compiler.h>
-
 #if MD_COMPILER_MSVC
 #   ifndef _CRT_SECURE_NO_WARNINGS
 #       define _CRT_SECURE_NO_WARNINGS
@@ -11,6 +10,12 @@
 
 #include <cmath>
 #include <string>
+#include <memory>
+
+#ifdef VIAMD_ENABLE_WEBSOCKET
+#include <rtc/websocket.hpp>
+using rtc::WebSocket;
+#endif
 
 #include <md_util.h>
 #include <md_gl.h>
@@ -546,6 +551,24 @@ int main(int argc, char** argv) {
     md_bitfield_init(&state.representation.visibility_mask, persistent_alloc);
 
     md_semaphore_init(&state.script.ir_semaphore, IR_SEMAPHORE_MAX_COUNT);
+
+#ifdef VIAMD_ENABLE_WEBSOCKET
+    VIAMD_LOG_DEBUG("Initialized WebSocket server on port %d.", state.wss.port());
+
+    std::vector<std::shared_ptr<rtc::WebSocket>> clients;
+
+    state.wss.onClient([&](std::shared_ptr<rtc::WebSocket> client) {
+        clients.push_back(client);
+        std::string addr = client->remoteAddress().value_or("unknown address");
+        VIAMD_LOG_INFO("WebSocket client connected: %s", addr.c_str());
+        client->onMessage([&](rtc::message_variant msg) {
+            std::string text = std::get<std::string>(msg);
+            VIAMD_LOG_DEBUG("WebSocket client message: %s", text.c_str());
+        });
+        client->onClosed([&]() { VIAMD_LOG_INFO("WebSocket client disconnected: %s", addr.c_str()); });
+    });
+#endif
+
     // Init platform
     VIAMD_LOG_DEBUG("Initializing GL...");
     if (!application::initialize(&state.app, 0, 0, STR_LIT("VIAMD"))) {

@@ -1,4 +1,5 @@
 ﻿#include <core/md_compiler.h>
+#include <cstdlib>
 #if MD_COMPILER_MSVC
 #   ifndef _CRT_SECURE_NO_WARNINGS
 #       define _CRT_SECURE_NO_WARNINGS
@@ -552,7 +553,9 @@ int main(int argc, char** argv) {
 
 #ifdef VIAMD_ENABLE_WEBSOCKET
     VIAMD_LOG_DEBUG("Initializing WebSocket server...");
-    Api api = api::create();
+    int port = 8080;
+    if (auto env_port = std::getenv("VIAMD_WEBSOCKET_PORT")) port = std::atoi(env_port);
+    Api api = api::create(port);
     api::initialize(api, &state);
     VIAMD_LOG_INFO("WebSocket server is listening on port %d.", api.server.port());
 #endif

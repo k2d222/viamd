@@ -95,6 +95,8 @@ void api::initialize(Api& api, ApplicationState* data) {
 
         client->onClosed([&]() {
              VIAMD_LOG_INFO("WebSocket client disconnected: %s", addr.c_str());
+             auto it = std::ranges::find(api.clients, client);
+             if (it != api.clients.end()) api.clients.erase(it);
          });
     });
 }

@@ -247,5 +247,5 @@ target_link_libraries(viamd
 )
 
 if (VIAMD_ENABLE_WEBSOCKET)
-    target_link_libraries(viamd LibDataChannel::LibDataChannel) # or build static: LibDataChannel::LibDataChannelStatic
+    target_link_libraries(viamd LibDataChannel::LibDataChannel nlohmann_json::nlohmann_json) # or build static: LibDataChannel::LibDataChannelStatic
 endif ()

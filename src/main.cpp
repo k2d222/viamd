@@ -10,12 +10,6 @@
 
 #include <cmath>
 #include <string>
-#include <memory>
-
-#ifdef VIAMD_ENABLE_WEBSOCKET
-#include <rtc/websocket.hpp>
-using rtc::WebSocket;
-#endif
 
 #include <md_util.h>
 #include <md_gl.h>
@@ -68,6 +62,10 @@ using rtc::WebSocket;
 
 #include <viamd.h>
 #include <event.h>
+
+#ifdef VIAMD_ENABLE_WEBSOCKET
+#include "api.h"
+#endif
 
 #define EXPERIMENTAL_GFX_API 0
 #define COMPILATION_TIME_DELAY_IN_SECONDS 1.0
@@ -553,20 +551,10 @@ int main(int argc, char** argv) {
     md_semaphore_init(&state.script.ir_semaphore, IR_SEMAPHORE_MAX_COUNT);
 
 #ifdef VIAMD_ENABLE_WEBSOCKET
-    VIAMD_LOG_DEBUG("Initialized WebSocket server on port %d.", state.wss.port());
-
-    std::vector<std::shared_ptr<rtc::WebSocket>> clients;
-
-    state.wss.onClient([&](std::shared_ptr<rtc::WebSocket> client) {
-        clients.push_back(client);
-        std::string addr = client->remoteAddress().value_or("unknown address");
-        VIAMD_LOG_INFO("WebSocket client connected: %s", addr.c_str());
-        client->onMessage([&](rtc::message_variant msg) {
-            std::string text = std::get<std::string>(msg);
-            VIAMD_LOG_DEBUG("WebSocket client message: %s", text.c_str());
-        });
-        client->onClosed([&]() { VIAMD_LOG_INFO("WebSocket client disconnected: %s", addr.c_str()); });
-    });
+    VIAMD_LOG_DEBUG("Initializing WebSocket server...");
+    Api api = api::create();
+    api::initialize(api, state);
+    VIAMD_LOG_INFO("WebSocket server is listening on port %d.", api.server.port());
 #endif
 
     // Init platform
@@ -664,6 +652,10 @@ int main(int argc, char** argv) {
     // Main loop
     while (!state.app.window.should_close) {
         application::update(&state.app);
+
+#ifdef VIAMD_ENABLE_WEBSOCKET
+        api::update(api, state);
+#endif
         
         // This needs to happen first (in imgui events) to enable docking of imgui windows
 #if VIAMD_IMGUI_ENABLE_DOCKSPACE

@@ -74,15 +74,52 @@ void load_json_state(ApplicationState* data, std::string text) {
     }
 }
 
+json serialize_state(ApplicationState* data) {
+    json representations = json::array();
+
+    for (size_t i = 0; i < md_array_size(data->representation.reps); ++i) {
+        auto& rep = data->representation.reps[i];
+        representations.push_back(json {
+            { "name", rep.name },
+            { "type", representation_type_str[(int)rep.type] },
+            { "mapping", color_mapping_str[(int)rep.color_mapping] },
+            { "filter", rep.filt },
+        });
+    }
+
+    json j;
+    j["editor"] = data->editor.GetTotalLines() == 0 ? "" : data->editor.GetText(); // there is a bug in GetText with 0 lines...
+    j["camera"] = {
+        { "position", {
+            data->view.camera.position.x,
+            data->view.camera.position.y,
+            data->view.camera.position.z,
+        } },
+        { "orientation", {
+            data->view.camera.orientation.x,
+            data->view.camera.orientation.y,
+            data->view.camera.orientation.z,
+            data->view.camera.orientation.w,
+        } },
+        { "distance", data->view.camera.focus_distance },
+    };
+    j["representations"] = representations;
+    return j;
+}
+
 void api::initialize(Api& api, ApplicationState* data) {
     api.clients.clear();
 
-    api.server.onClient([&](std::shared_ptr<rtc::WebSocket> client) {
+    api.server.onClient([=, &api](std::shared_ptr<rtc::WebSocket> client) {
         api.clients.push_back(client);
         std::string addr = client->remoteAddress().value_or("unknown address");
         VIAMD_LOG_INFO("WebSocket client connected: %s", addr.c_str());
 
-        client->onMessage([&](rtc::message_variant msg) {
+        client->onOpen([client, data]() {
+            client->send(serialize_state(data).dump());
+        });
+
+        client->onMessage([=](rtc::message_variant msg) {
             std::string text = std::get<std::string>(msg);
 
             try {
@@ -93,7 +130,7 @@ void api::initialize(Api& api, ApplicationState* data) {
             }
         });
 
-        client->onClosed([&]() {
+        client->onClosed([=, &api]() {
              VIAMD_LOG_INFO("WebSocket client disconnected: %s", addr.c_str());
              auto it = std::ranges::find(api.clients, client);
              if (it != api.clients.end()) api.clients.erase(it);
@@ -102,12 +139,12 @@ void api::initialize(Api& api, ApplicationState* data) {
 }
 
 void api::update(Api& api, ApplicationState* data) {
-    if (data->editor.IsTextChanged()) {
+    // TODO: send more updates.
+    if (data->editor.IsTextChanged() || data->representation.needs_update) {
+        auto payload = serialize_state(data).dump();
+
         for (auto& client : api.clients) {
-            json j = json{
-                { "editor", data->editor.GetText() }
-            };
-            client->send(j.dump());
+            client->send(payload);
         }
     }
 }

@@ -47,6 +47,7 @@ option(VIAMD_IMGUI_ENABLE_DOCKSPACE "Enable ImGui Dockspace in main window" OFF)
 option(VIAMD_CREATE_MACOSX_BUNDLE "Build a macosx bundle instead of just an executable" OFF)
 option(VIAMD_LINK_STDLIB_STATIC "Link against stdlib statically" ON)
 option(VIAMD_ENABLE_VELOXCHEM "Enable Veloxchem Module" OFF)
+option(VIAMD_ENABLE_WEBSOCKET "Enable WebSocket server for remote control" OFF)
 set(VIAMD_FRAME_CACHE_SIZE_MB "2048" CACHE STRING "Reserved frame cache size in Megabytes")
 set(VIAMD_NUM_WORKER_THREADS "8" CACHE STRING "Number of worker threads (Decrease if you run out of memory during evaluation)")
 
@@ -75,7 +76,10 @@ add_subdirectory(ext/ImGuiColorTextEdit)
 add_subdirectory(ext/implot)
 add_subdirectory(ext/atomic_queue)
 add_subdirectory(ext/imgui_notify)
-add_subdirectory(ext/libdatachannel)
+
+if (VIAMD_ENABLE_WEBSOCKET)
+    add_subdirectory(ext/libdatachannel)
+endif ()
 
 # Copy many of the fields from mdlib
 set(VIAMD_EXTRA_LIBS)
@@ -207,6 +211,7 @@ target_compile_definitions(viamd PRIVATE
     VIAMD_FRAME_CACHE_SIZE=${VIAMD_FRAME_CACHE_SIZE_MB}
     VIAMD_IMGUI_ENABLE_VIEWPORTS=$<BOOL:${VIAMD_IMGUI_ENABLE_VIEWPORTS}>
     VIAMD_IMGUI_ENABLE_DOCKSPACE=$<BOOL:${VIAMD_IMGUI_ENABLE_DOCKSPACE}>
+    VIAMD_ENABLE_WEBSOCKET=$<BOOL:${VIAMD_ENABLE_WEBSOCKET}>
     ${MD_DEFINES}
 )
 
@@ -238,7 +243,9 @@ target_link_libraries(viamd
     implot
     atomic_queue
     imgui_notify
-    LibDataChannel::LibDataChannel # or build static: LibDataChannel::LibDataChannelStatic
     ${VIAMD_EXTRA_LIBS}
 )
 
+if (VIAMD_ENABLE_WEBSOCKET)
+    target_link_libraries(viamd LibDataChannel::LibDataChannel) # or build static: LibDataChannel::LibDataChannelStatic
+endif ()

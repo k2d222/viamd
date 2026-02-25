@@ -17,6 +17,10 @@
 #include <task_system.h>
 #include <loader.h>
 
+#ifdef VIAMD_ENABLE_WEBSOCKET
+#include <rtc/websocketserver.hpp>
+#endif
+
 #define IMGUI_DEFINE_MATH_OPERATORS
 
 #include <TextEditor.h>
@@ -933,6 +937,10 @@ struct ApplicationState {
     bool show_property_export_window = false;
 
     TextEditor editor = {};
+
+#ifdef VIAMD_ENABLE_WEBSOCKET
+    rtc::WebSocketServer wss;
+#endif
 };
 
 static inline void modify_field(md_bitfield_t* bf, const md_bitfield_t* mask, SelectionOperator op) {

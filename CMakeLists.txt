@@ -75,6 +75,7 @@ add_subdirectory(ext/ImGuiColorTextEdit)
 add_subdirectory(ext/implot)
 add_subdirectory(ext/atomic_queue)
 add_subdirectory(ext/imgui_notify)
+add_subdirectory(ext/libdatachannel)
 
 # Copy many of the fields from mdlib
 set(VIAMD_EXTRA_LIBS)
@@ -237,6 +238,7 @@ target_link_libraries(viamd
     implot
     atomic_queue
     imgui_notify
+    LibDataChannel::LibDataChannel # or build static: LibDataChannel::LibDataChannelStatic
     ${VIAMD_EXTRA_LIBS}
 )
 

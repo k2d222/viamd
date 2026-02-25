@@ -10,3 +10,6 @@
 [submodule "ext/mdlib"]
 	path = ext/mdlib
 	url = https://github.com/scanberg/mdlib
+[submodule "ext/libdatachannel"]
+	path = ext/libdatachannel
+	url = https://github.com/paullouisageneau/libdatachannel

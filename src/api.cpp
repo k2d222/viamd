@@ -8,6 +8,7 @@
 #include <core/md_str.h>
 #include <core/md_vec_math.h>
 #include <viamd.h>
+#include <task_system.h>
 
 #include <nlohmann/json.hpp>
 using rtc::WebSocket;
@@ -33,12 +34,16 @@ void extract_json_quat(quat_t& q, const json& json) {
 }
 
 RepresentationType extract_rep_type(const std::string& str) {
-    auto it = std::ranges::find(representation_type_str, str.c_str());
+    auto it = std::ranges::find_if(representation_type_str, [&str](auto s) {
+        return str == s;
+    });
     return (RepresentationType)(it - representation_type_str);
 }
 
 ColorMapping extract_color_mapping(const std::string& str) {
-    auto it = std::ranges::find(color_mapping_str, str.c_str());
+    auto it = std::ranges::find_if(color_mapping_str, [&str](auto s) {
+        return str == s;
+    });
     return (ColorMapping)(it - color_mapping_str);
 }
 
@@ -52,25 +57,29 @@ void load_json_state(ApplicationState* data, std::string text) {
 
     if (j.contains("camera")) {
         auto const& c = j["camera"];
-        extract_json_vec3(data->view.camera.position, c["position"]);
-        extract_json_quat(data->view.camera.orientation, c["orientation"]);
+        extract_json_vec3(data->view.animation.target_position, c["position"]);
+        extract_json_quat(data->view.animation.target_orientation, c["orientation"]);
+        data->view.animation.target_distance = c["distance"];
         data->view.camera.focus_distance = c["distance"];
     }
 
     if (j.contains("representations")) {
-        remove_all_representations(data);
-        for (auto const& r : j["representations"]) {
-            Representation* rep = create_representation(data);
-            std::string name = r["name"];
-            std::string type = r["type"];
-            std::string mapping = r["mapping"];
-            std::string filt = r["filter"];
-            str_copy_to_char_buf(rep->name, sizeof(rep->name), str_t{ name.data(), name.size() });
-            rep->type = extract_rep_type(type);
-            rep->color_mapping = extract_color_mapping(mapping);
-            str_copy_to_char_buf(rep->filt, sizeof(rep->filt), str_t{ filt.data(), filt.size() });
-            
-        }
+        auto task = task_system::create_main_task(STR_LIT("Update state from WebSocket"), [j, data]() {
+            remove_all_representations(data);
+            for (auto const& r : j["representations"]) {
+                Representation* rep = create_representation(data);
+                std::string name = r["name"];
+                std::string type = r["type"];
+                std::string mapping = r["mapping"];
+                std::string filt = r["filter"];
+                str_copy_to_char_buf(rep->name, sizeof(rep->name), str_t{ name.data(), name.size() });
+                rep->type = extract_rep_type(type);
+                rep->color_mapping = extract_color_mapping(mapping);
+                str_copy_to_char_buf(rep->filt, sizeof(rep->filt), str_t{ filt.data(), filt.size() });
+                VIAMD_LOG_DEBUG("new repr: name=%s, type=%i, col=%i, filt=%s", rep->name, rep->type, rep->color_mapping, rep->filt);
+            }
+        });
+        task_system::enqueue_task(task);
     }
 }
 

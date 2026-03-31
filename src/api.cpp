@@ -11,6 +11,7 @@
 #include <task_system.h>
 
 #include <nlohmann/json.hpp>
+#include "core/md_array.h"
 #include "md_system.h"
 using rtc::WebSocket;
 using json = nlohmann::json;
@@ -98,11 +99,26 @@ json serialize_state(ApplicationState* data) {
     }
 
     json entities = json::array();
-
     size_t n_entities = md_system_entity_count(&data->mold.sys);
     for (size_t i = 0; i < n_entities; ++i) {
         str_t desc = md_entity_description(&data->mold.sys.entity, i);
         entities.push_back(std::string(desc.ptr, desc.len));
+    }
+
+    json props = json::array();
+    size_t n_props = md_array_size(data->display_properties);
+    for (size_t i = 0; i < n_props; ++i) {
+        DisplayProperty& dp = data->display_properties[i];
+        if (dp.type != DisplayProperty::Type_Temporal) continue;
+        props.push_back(dp.label);
+    }
+
+    json plots = json::array();
+    size_t n_plots = 0;
+    for (size_t i = 0; i < n_plots; ++i) {
+        // DisplayProperty& dp = data->display_properties[i];
+        // if (dp.type != DisplayProperty::Type_Temporal) continue;
+        // props.push_back(dp.label);
     }
 
     json j;
@@ -123,6 +139,8 @@ json serialize_state(ApplicationState* data) {
     };
     j["representations"] = representations;
     j["entities"] = entities;
+    j["temporal_properties"] = props;
+    j["temporal_plots"] = plots;
 
     return j;
 }

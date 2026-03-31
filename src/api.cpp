@@ -11,6 +11,7 @@
 #include <task_system.h>
 
 #include <nlohmann/json.hpp>
+#include "md_system.h"
 using rtc::WebSocket;
 using json = nlohmann::json;
 
@@ -96,6 +97,14 @@ json serialize_state(ApplicationState* data) {
         });
     }
 
+    json entities = json::array();
+
+    size_t n_entities = md_system_entity_count(&data->mold.sys);
+    for (size_t i = 0; i < n_entities; ++i) {
+        str_t desc = md_entity_description(&data->mold.sys.entity, i);
+        entities.push_back(std::string(desc.ptr, desc.len));
+    }
+
     json j;
     j["editor"] = data->editor.GetTotalLines() == 0 ? "" : data->editor.GetText(); // there is a bug in GetText with 0 lines...
     j["camera"] = {
@@ -113,6 +122,8 @@ json serialize_state(ApplicationState* data) {
         { "distance", data->view.camera.focus_distance },
     };
     j["representations"] = representations;
+    j["entities"] = entities;
+
     return j;
 }
 

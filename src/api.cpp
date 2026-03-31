@@ -1,6 +1,7 @@
 #include "api.h"
 
 #include <algorithm>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -177,8 +178,14 @@ void api::initialize(Api& api, ApplicationState* data) {
 }
 
 void api::update(Api& api, ApplicationState* data) {
+    static double lastUpdate = 0;
+    bool needsUpdate = false;
+    if (data->app.timing.total_s - lastUpdate > 5.0) {
+        lastUpdate = data->app.timing.total_s;
+        needsUpdate = true;
+    }
     // TODO: send more updates.
-    if (data->editor.IsTextChanged() || data->representation.needs_update) {
+    if (needsUpdate || data->editor.IsTextChanged() || data->representation.needs_update) {
         auto payload = serialize_state(data).dump();
 
         for (auto& client : api.clients) {
